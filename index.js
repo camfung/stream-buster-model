@@ -1,10 +1,11 @@
 const express = require('express');
 const ollama = require('ollama');
 const cors = require("cors");
-
+require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_KEY = "thisisthekey" // Make sure to set this environment variable
+const API_KEY = process.env.API_KEY
+console.log(API_KEY)
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
