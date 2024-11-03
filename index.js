@@ -1,28 +1,40 @@
-
 const express = require('express');
 const ollama = require('ollama');
-const cors = require("cors")
+const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
+const API_KEY = "thisisthekey" // Make sure to set this environment variable
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
-app.use(cors())
+app.use(cors());
 
-// Define the /ask-query endpoint
-app.post('/ask-query', async (req, res) => {
+// Custom middleware to check API key
+function apiKeyAuth(req, res, next) {
+	const apiKey = req.header('x-api-key');
+	if (apiKey && apiKey === API_KEY) {
+		return next(); // API key is valid, proceed to the endpoint
+	} else {
+		return res.status(403).send({ error: 'Forbidden: Invalid API key' });
+	}
+}
+
+// Apply the middleware to the /ask-query endpoint
+app.post('/ask-query', apiKeyAuth, async (req, res) => {
 	try {
-		const { query } = req.body;
+		// Destructure messages from the request body
+		const { messages } = req.body;
 
-		if (!query) {
-			return res.status(400).send({ error: 'Query is required in the request body.' });
+		// Check if messages is not an array or is empty
+		if (!Array.isArray(messages) || messages.length === 0) {
+			return res.status(400).send({ error: 'Messages array is required in the request body.' });
 		}
 
-		// Send the query to the model
+		// Send the messages to the model
 		const response = await ollama.default.chat({
 			model: 'llama3.2',
-			messages: [{ role: 'user', content: query }],
+			messages: messages,
 		});
 
 		// Send the response from the model back to the client
@@ -32,7 +44,6 @@ app.post('/ask-query', async (req, res) => {
 		res.status(500).send({ error: 'Something went wrong while processing your request.' });
 	}
 });
-
 // Default error handling middleware
 app.use((err, req, res, next) => {
 	console.error(err.stack);
